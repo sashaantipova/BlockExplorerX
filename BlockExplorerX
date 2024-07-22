@@ -1,0 +1,110 @@
+# BlockExplorerX.py
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import requests
+from datetime import datetime
+from typing import Dict, Any
+
+class BlockExplorerX:
+    def __init__(self, api_base_url: str):
+        self.api_base_url = api_base_url
+        self.data = pd.DataFrame()
+
+    def fetch_block_data(self, block_height: int) -> Dict[str, Any]:
+        """
+        Fetch data for a specific block.
+        """
+        url = f"{self.api_base_url}/block/{block_height}"
+        response = requests.get(url)
+        return response.json()
+
+    def load_block_data(self, block_height: int):
+        """
+        Load block data into the DataFrame.
+        """
+        block_data = self.fetch_block_data(block_height)
+        self.data = pd.json_normalize(block_data)
+        print(f"Data loaded for block height: {block_height}")
+
+    def fetch_transaction_data(self, txid: str) -> Dict[str, Any]:
+        """
+        Fetch data for a specific transaction.
+        """
+        url = f"{self.api_base_url}/tx/{txid}"
+        response = requests.get(url)
+        return response.json()
+
+    def analyze_block(self):
+        """
+        Analyze block data.
+        """
+        if self.data.empty:
+            raise ValueError("Data is not loaded.")
+        
+        block_time = self.data['time'].iloc[0]
+        block_transactions = self.data['tx'].iloc[0]
+        
+        print(f"Block Time: {datetime.fromtimestamp(block_time)}")
+        print(f"Number of Transactions: {len(block_transactions)}")
+
+    def plot_block_data(self):
+        """
+        Plot block data.
+        """
+        if self.data.empty:
+            raise ValueError("Data is not loaded.")
+        
+        block_time = self.data['time'].iloc[0]
+        block_transactions = self.data['tx'].iloc[0]
+        
+        tx_lengths = [len(tx) for tx in block_transactions]
+        
+        plt.figure(figsize=(10, 6))
+        plt.hist(tx_lengths, bins=20, color='blue', alpha=0.7)
+        plt.xlabel('Transaction Size')
+        plt.ylabel('Frequency')
+        plt.title(f'Transaction Size Distribution for Block at {datetime.fromtimestamp(block_time)}')
+        plt.grid(True)
+        plt.show()
+
+    def generate_report(self) -> Dict[str, Any]:
+        """
+        Generate a report on the block data.
+        """
+        if self.data.empty:
+            raise ValueError("Data is not loaded.")
+        
+        block_time = self.data['time'].iloc[0]
+        block_transactions = self.data['tx'].iloc[0]
+        num_transactions = len(block_transactions)
+        avg_tx_size = np.mean([len(tx) for tx in block_transactions])
+        
+        report = {
+            'block_time': datetime.fromtimestamp(block_time),
+            'num_transactions': num_transactions,
+            'avg_tx_size': avg_tx_size
+        }
+        
+        return report
+
+# Example usage
+if __name__ == "__main__":
+    api_base_url = 'https://blockchain.info'  # Example base URL
+    block_explorer = BlockExplorerX(api_base_url)
+    
+    # Load data for a specific block height (example block height: 1000000)
+    block_explorer.load_block_data(block_height=1000000)
+    
+    # Analyze block data
+    block_explorer.analyze_block()
+    
+    # Plot block data
+    block_explorer.plot_block_data()
+    
+    # Generate and print a report
+    report = block_explorer.generate_report()
+    print("Block Data Report:")
+    for key, value in report.items():
+        print(f"{key}: {value}")
